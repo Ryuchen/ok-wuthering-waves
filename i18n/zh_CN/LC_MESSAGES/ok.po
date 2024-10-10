@@ -1,9 +1,6 @@
 #
 msgid ""
 msgstr ""
-
-msgid ""
-msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: you@example.com\n"
 "Last-Translator: you@example.com\n"
@@ -11,6 +8,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+msgid ""
+msgstr ""
 
 msgid "(1-6) Important, Choose which level to farm, lower levels might not produce a echo"
 msgstr "(1-6) 重要, 选择你对应世界等级可以产出声骸的难度, 从上到下为1-6"
@@ -23,12 +23,6 @@ msgstr "第2个Boss"
 
 msgid "Boss3"
 msgstr "第3个Boss"
-
-msgid "Choose Forward for Dreamless, Backward for Jue"
-msgstr "无妄者选前进, 角选后退"
-
-msgid "Click Start at the Entrance(Dreamless, Jue)"
-msgstr "在入口点击(无妄者, 角)"
 
 msgid "Click Start in Game World"
 msgstr "在游戏世界点击开始"
@@ -74,6 +68,12 @@ msgstr "乌龟"
 
 msgid "Crownless"
 msgstr "无冠者"
+
+msgid "Jue"
+msgstr "角"
+
+msgid "Dreamless"
+msgstr "无妄者"
 
 msgid "Enable auto combat in Abyss, Game World etc"
 msgstr "在大世界,深渊,无音区等开启自动战斗"
@@ -210,9 +210,6 @@ msgstr "打开以启用自动拾取声骸"
 msgid "can't find gray_book_boss, make sure f2 is the hotkey for book"
 msgstr "找不到boss列表, 请确认快捷键f2可以打开书"
 
-msgid "1"
-msgstr ""
-
 msgid "Boss1 Echo Pickup Method"
 msgstr "Boss1搜索声骸方法"
 
@@ -234,20 +231,11 @@ msgstr "后退再前进"
 msgid "Death Count"
 msgstr "死亡次数"
 
-msgid "3"
-msgstr ""
-
-msgid "4"
-msgstr ""
-
-msgid "4C舍弃"
-msgstr ""
-
 msgid "Game Sound"
-msgstr ""
+msgstr "游戏声音"
 
 msgid "Mute Game while in Background"
-msgstr ""
+msgstr "游戏后台时静音"
 
 msgid "Pick Up Black List"
 msgstr "拾取黑名单"
@@ -255,89 +243,131 @@ msgstr "拾取黑名单"
 msgid "Pick Up White List"
 msgstr "拾取白名单"
 
-msgid "不绝余音"
+msgid "Auto Combat in Illusive Realm"
+msgstr "需要上哪里亮了点哪里的角色"
+
+msgid "Auto Combat in Multiplayer Mode"
+msgstr "多人联机自动战斗"
+
+msgid "Enable auto combat in Multiplayer Mode"
+msgstr "多人联机开启自动战斗, 需要上哪里亮了点哪里的角色"
+
+msgid "Illusive Realm"
+msgstr "半自动肉鸽(深坠异想奇境)"
+
+msgid "Fallacy of No Return"
+msgstr "无归的谬误"
+
+msgid "click f2 to open the book"
+msgstr "点击F2打开书"
+
+msgid "Check configs to keep, click start in game world, must be in a 16:9 screen ratio"
+msgstr "必须16:9分辨率, 没有勾选的都会标记为弃置, 大世界启动"
+
+msgid "Boss"
 msgstr ""
 
-msgid "主属性攻击力百分比"
-msgstr ""
+msgid "Celestial Light"
+msgstr "浮星祛暗"
 
-msgid "主属性生命值百分比"
-msgstr ""
+msgid "Discard Echo"
+msgstr "弃置声骸"
 
-msgid "主属性防御力百分比"
-msgstr ""
+msgid "Discarded"
+msgstr "已弃置"
 
-msgid "全部未加锁"
-msgstr ""
+msgid "Freezing Frost"
+msgstr "凝夜白霜"
 
-msgid "凝夜白霜"
-msgstr ""
+msgid "Keep 1C ATK"
+msgstr "保留 1C 攻击"
 
-msgid "啸谷长风"
-msgstr ""
+msgid "Keep 1C DEF"
+msgstr "保留 1C 防御"
 
-msgid "在数据坞五合一界面启动"
-msgstr ""
+msgid "Keep 1C HP"
+msgstr "保留 1C 生命"
 
-msgid "处理声骸COST"
-msgstr ""
+msgid "Keep 3C ATK"
+msgstr "保留 3C 攻击"
 
-msgid "彻空冥雷"
-msgstr ""
+msgid "Keep 3C Aero DMG"
+msgstr "保留 3C 风伤"
 
-msgid "数据坞五合一 + 自动上锁, 游戏语言必须为简体中文,必须16:9分辨率"
-msgstr ""
+msgid "Keep 3C DEF"
+msgstr "保留 3C 防御"
 
-msgid "沉日劫明"
-msgstr ""
+msgid "Keep 3C Electro DMG"
+msgstr "保留 3C 雷伤"
 
-msgid "浮星祛暗"
-msgstr ""
+msgid "Keep 3C Energy Regen"
+msgstr "保留 3C 充能"
 
-msgid "熔山裂谷"
-msgstr ""
+msgid "Keep 3C Fusion DMG"
+msgstr "保留 3C 火伤"
 
-msgid "轻云出月"
-msgstr ""
+msgid "Keep 3C Glacio DMG"
+msgstr "保留 3C 冰伤"
 
-msgid "锁定_1C_攻击"
-msgstr ""
+msgid "Keep 3C HP"
+msgstr "保留 3C 生命"
 
-msgid "锁定_1C_生命"
-msgstr ""
+msgid "Keep 3C Havoc DMG"
+msgstr "保留 3C 暗伤"
 
-msgid "锁定_1C_防御"
-msgstr ""
+msgid "Keep 3C Spectro DMG"
+msgstr "保留 3C 光伤"
 
-msgid "锁定_3C_共鸣效率"
-msgstr ""
+msgid "Keep 4C ATK"
+msgstr "保留 4C 攻击"
 
-msgid "锁定_3C_冷凝伤害加成"
-msgstr ""
+msgid "Keep 4C Crit"
+msgstr "保留 4C 暴击"
 
-msgid "锁定_3C_导电伤害加成"
-msgstr ""
+msgid "Keep 4C Crit DMG"
+msgstr "保留 4C 爆伤"
 
-msgid "锁定_3C_攻击"
-msgstr ""
+msgid "Keep 4C DEF"
+msgstr "保留 4C 防御"
 
-msgid "锁定_3C_气动伤害加成"
-msgstr ""
+msgid "Keep 4C HP"
+msgstr "保留 4C 生命"
 
-msgid "锁定_3C_湮灭伤害加成"
-msgstr ""
+msgid "Keep 4C Healing"
+msgstr "保留 4C 治疗"
 
-msgid "锁定_3C_热熔伤害加成"
-msgstr ""
+msgid "Lingering Tunes"
+msgstr "不绝余音"
 
-msgid "锁定_3C_生命"
-msgstr ""
+msgid "Molten Rift"
+msgstr "熔山裂谷"
 
-msgid "锁定_3C_衍射伤害加成"
-msgstr ""
+msgid "Moonlit Clouds"
+msgstr "轻云出月"
 
-msgid "锁定_3C_防御"
-msgstr ""
+msgid "Rejuvenating Glow"
+msgstr "隐世回光"
 
-msgid "隐世回光"
-msgstr ""
+msgid "Sierra Gale"
+msgstr "啸谷长风"
+
+msgid "Sun-sinking Eclipse"
+msgstr "沉日劫明"
+
+msgid "Void Thunder"
+msgstr "彻空冥雷"
+
+msgid "Prevent Wuthering Waves from moving the mouse"
+msgstr "防止鸣潮游戏移动鼠标"
+
+msgid "Turn on if you mouse jumps around"
+msgstr "如果打开鸣潮的时候鼠标会跳动(游戏问题,窗口后台的时候可能移动鼠标)"
+
+msgid "Auto Echo Data Merge"
+msgstr "自动合成声骸"
+
+msgid "Data Merge Completed!"
+msgstr "自动合成声骸完成!"
+
+msgid "Auto combat error: Make sure you're equipping echos and turn off effect that changes the game color, (Game Gammar/Nvidia AMD Game Filter), turn off Motion Blur in game video options"
+msgstr "自动战斗错误:请确认已装备声骸,关闭运动模糊,游戏为默认亮度,并关闭夜灯模式/显示器高级色彩/显卡滤镜等一切改变游戏颜色的配置."

@@ -8,9 +8,12 @@
 </div>
 
 ![Static Badge](https://img.shields.io/badge/platfrom-Windows-blue?color=blue)
-![GitHub release (with filter)](https://img.shields.io/github/v/release/ok-oldking/ok-wuthering-waves)
-![GitHub all releases](https://img.shields.io/github/downloads/ok-oldking/ok-wuthering-waves/total)
-![Static Badge](https://img.shields.io/badge/QQ%E7%BE%A4-970523295-purple)
+[![GitHub release (with filter)](https://img.shields.io/github/v/release/ok-oldking/ok-wuthering-waves)](https://github.com/ok-oldking/ok-wuthering-waves/releases)
+[![GitHub all releases](https://img.shields.io/github/downloads/ok-oldking/ok-wuthering-waves/total)](https://github.com/ok-oldking/ok-wuthering-waves/releases)
+[![Static Badge](https://img.shields.io/badge/QQ%E7%BE%A4-970523295-purple)](https://qm.qq.com/q/ufUCrCEq6A)
+[![Static Badge](https://img.shields.io/badge/Discord-blue?link=https%3A%2F%2Fdiscord.gg%2FZMHXx5QBuH)](https://discord.gg/Sy6etyCRed)
+
+Watch the demo and tutorial on [![YouTube](https://img.shields.io/badge/YouTube-%23FF0000.svg?style=for-the-badge&logo=YouTube&logoColor=white)](https://youtu.be/apalaRDDmVw)
 
 ### English | [简体中文](README_cn.md)
 
@@ -39,6 +42,8 @@ git clone https://github.com/ok-oldking/ok-wuthering-waves
 pip install -r requirements.txt #install python dependencies
 python main.py # run the release version
 python main_debug.py # run the debug version
+python main_gpu_debug.py # run the gpu debug version
+python main_gpu.py # run the gpu release version
 ```
 
 # Disclaimer

@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 
-from ok.util.path import get_path_in_package
-
 version = "v5.0.11"
 
 
@@ -15,7 +13,7 @@ config = {
     'debug': False,  # Optional, default: False
     'use_gui': True,
     'config_folder': 'configs',
-    'gui_icon': get_path_in_package(__file__, 'icon.png'),
+    'gui_icon': 'icon.png',
     'ocr': {
         'lib': 'rapidocr_openvino'
     },
@@ -23,7 +21,7 @@ config = {
     'wait_until_before_delay': 2,  # default 1 , for wait_until() function
     # required if using feature detection
     'template_matching': {
-        'coco_feature_json': os.path.join('assets', '_annotations.coco.json'),
+        'coco_feature_json': os.path.join('assets', 'result.json'),
         'default_horizontal_variance': 0.002,
         'default_vertical_variance': 0.002,
         'default_threshold': 0.8,
@@ -50,13 +48,44 @@ config = {
     },
     'git_update': {'sources': [{
         'name': 'Global',
-        'git_url': 'https://github.com/ok-oldking/ok-wuthering-waves',
+        'git_url': 'https://github.com/ok-oldking/ok-wuthering-waves.git',
         'pip_url': 'https://pypi.org/simple/'
     }, {
+        'name': '清华大学',
+        'git_url': 'https://e.coding.net/g-frfh1513/ok-wuthering-waves/ok-wuthering-waves.git',
+        'pip_url': 'https://pypi.tuna.tsinghua.edu.cn/simple'
+    }, {
         'name': 'China',
-        'git_url': 'https://github.com/ok-oldking/ok-wuthering-waves',
-        'pip_url': 'https://pypi.org/simple/'
-    }]},
+        'git_url': 'https://e.coding.net/g-frfh1513/ok-wuthering-waves/ok-wuthering-waves.git',
+        'pip_url': 'https://pypi.tuna.tsinghua.edu.cn/simple'
+    }, {
+        'name': '腾讯云',
+        'git_url': 'https://e.coding.net/g-frfh1513/ok-wuthering-waves/ok-wuthering-waves.git',
+        'pip_url': 'https://mirrors.cloud.tencent.com/pypi/simple'
+    }, {
+        'name': '阿里云',
+        'git_url': 'https://e.coding.net/g-frfh1513/ok-wuthering-waves/ok-wuthering-waves.git',
+        'pip_url': 'https://mirrors.aliyun.com/pypi/simple'
+    },
+    ]},
+    'links': {
+        'default': {
+            'github': 'https://github.com/ok-oldking/ok-wuthering-waves',
+            'discord': 'https://discord.gg/Sy6etyCRed',
+            'sponsor': 'https://patreon.com/ok_oldking?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink',
+            'share': 'Download OK-WW from https://github.com/ok-oldking/ok-wuthering-waves/releases/latest',
+            'faq': 'https://github.com/ok-oldking/ok-wuthering-waves#FAQ'
+        },
+        'zh_CN': {
+            'github': 'https://github.com/ok-oldking/ok-wuthering-waves',
+            'discord': 'https://discord.gg/Sy6etyCRed',
+            'sponsor': 'https://afdian.com/a/ok-oldking',
+            'share': 'OK-WW 腾讯频道下载: https://pd.qq.com/s/75758wrmp 夸克网盘下载：https://pan.quark.cn/s/75b55ef72a34 GitHub下载: https://github.com/ok-oldking/ok-wuthering-waves/releases/latest',
+            'qq_group': 'https://qm.qq.com/q/ufUCrCEq6A',
+            'qq_channel': 'https://pd.qq.com/s/1t9xeti1z',
+            'faq': 'https://gitee.com/ok-olding/ok-wuthering-waves/blob/master/README_cn.md#%E5%87%BA%E7%8E%B0%E9%97%AE%E9%A2%98%E8%AF%B7%E6%A3%80%E6%9F%A5',
+        },
+    },
     'about': """
     <h3>OK-WW</h3>
     <p>GitHub <a href="https://github.com/ok-oldking/ok-wuthering-waves">https://github.com/ok-oldking/ok-wuthering-waves</></p>
@@ -82,13 +111,16 @@ config = {
     'launcher_error_log_file': 'logs/launcher_error.log',
     'version': version,
     'onetime_tasks': [  # tasks to execute
+        ["src.task.IllusiveRealmTask", "IllusiveRealmTask"],
         ["src.task.FarmEchoTask", "FarmEchoTask"],
         ["src.task.FarmWorldBossTask", "FarmWorldBossTask"],
-        ["src.task.FiveToOneTask", "FiveToOneTask"],
+        ["src.task.DiscardEchoTask", "DiscardEchoTask"],
         ["src.task.DiagnosisTask", "DiagnosisTask"],
     ], 'trigger_tasks': [
         ["src.task.AutoCombatTask", "AutoCombatTask"],
         ["src.task.AutoPickTask", "AutoPickTask"],
-        ["src.task.SkipDialogTask", "AutoDialogTask"]
+        ["src.task.SkipDialogTask", "AutoDialogTask"],
+        ["src.task.MultiplayerAutoCombatTask", "MultiplayerAutoCombatTask"],
+        ["src.task.MouseResetTask", "MouseResetTask"]
     ]
 }

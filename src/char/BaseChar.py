@@ -1,20 +1,17 @@
 import time
+
 from enum import IntEnum, StrEnum
-from typing import Any
-
-import cv2
-import numpy as np
-
-from ok.color.Color import color_range_to_bound
 from ok.config.Config import Config
 from ok.logging.Logger import get_logger
 from src import text_white_color
+from typing import Any
 
 
 class Priority(IntEnum):
     MIN = -999999999
     SWITCH_CD = -1000
     CURRENT_CHAR = -100
+    CURRENT_CHAR_PLUS = CURRENT_CHAR + 1
     SKILL_AVAILABLE = 100
     ALL_IN_CD = 0
     NORMAL = 10
@@ -235,7 +232,7 @@ class BaseChar:
         self.logger.info('reset state')
         self.has_intro = False
 
-    def click_liberation(self, wait_end=True, con_less_than=-1, send_click=False):
+    def click_liberation(self, con_less_than=-1, send_click=False, wait_if_cd_ready=0):
         if con_less_than > 0:
             if self.get_current_con() > con_less_than:
                 return False
@@ -243,6 +240,11 @@ class BaseChar:
         start = time.time()
         last_click = 0
         clicked = False
+        while time.time() - start < wait_if_cd_ready and not self.liberation_available() and not self.has_cd(
+                'liberation'):
+            self.logger.debug(f'click_liberation wait ready {wait_if_cd_ready}')
+            self.click(interval=0.1)
+            self.task.next_frame()
         while self.liberation_available():  # clicked and still in team wait for animation
             self.logger.debug(f'click_liberation liberation_available click')
             now = time.time()
@@ -295,22 +297,22 @@ class BaseChar:
         return time.time() - start - to_minus
 
     def get_liberation_key(self):
-        return self.task.key_config['Liberation Key']
+        return self.task.get_liberation_key()
 
     def get_echo_key(self):
-        return self.task.key_config['Echo Key']
+        return self.task.get_echo_key()
 
     def get_resonance_key(self):
-        return self.task.key_config['Resonance Key']
+        return self.task.get_resonance_key()
 
-    def get_switch_priority(self, current_char, has_intro):
-        priority = self.do_get_switch_priority(current_char, has_intro)
+    def get_switch_priority(self, current_char, has_intro, target_low_con):
+        priority = self.do_get_switch_priority(current_char, has_intro, target_low_con)
         if priority < Priority.MAX and time.time() - self.last_switch_time < 0.9:
             return Priority.SWITCH_CD  # switch cd
         else:
             return priority
 
-    def do_get_switch_priority(self, current_char, has_intro=False):
+    def do_get_switch_priority(self, current_char, has_intro=False, target_low_con=False):
         priority = 0
         if self.count_liberation_priority() and self.liberation_available():
             priority += self.count_liberation_priority()
@@ -357,63 +359,11 @@ class BaseChar:
             return time.time() - self.last_echo > self.echo_cd
 
     def is_con_full(self):
-        return self.get_current_con() == 1
+        return self.task.is_con_full(self.config)
 
     def get_current_con(self):
-        box = self.task.box_of_screen_scaled(3840, 2160, 1422, 1939, to_x=1566, to_y=2076, name='con_full',
-                                             hcenter=True)
-        box.confidence = 0
-
-        max_area = 0
-        percent = 0
-        max_is_full = False
-        color_index = -1
-        target_index = self.config.get('_ring_color_index', -1)
-        cropped = box.crop_frame(self.task.frame)
-        for i in range(len(con_colors)):
-            if target_index != -1 and i != target_index:
-                continue
-            color_range = con_colors[i]
-            area, is_full = self.count_rings(cropped, color_range,
-                                             1500 / 3840 / 2160 * self.task.screen_width * self.task.screen_height)
-            # self.logger.debug(f'is_con_full test color_range {color_range} {area, is_full}')
-            if is_full:
-                max_is_full = is_full
-                color_index = i
-            if area > max_area:
-                max_area = int(area)
-        if max_is_full:
-            self.logger.info(
-                f'is_con_full found a full ring {self.config.get("_full_ring_area", 0)} -> {max_area}  {color_index}')
-            self.config['_full_ring_area'] = max_area
-            self.config['_ring_color_index'] = color_index
-            self.logger.info(
-                f'is_con_full2 found a full ring {self.config.get("_full_ring_area", 0)} -> {max_area}  {color_index}')
-        if self.config.get('_full_ring_area', 0) > 0:
-            percent = max_area / self.config['_full_ring_area']
-        if not max_is_full and percent >= 1:
-            self.logger.warning(
-                f'is_con_full not full but percent greater than 1, set to 0.99, {percent} {max_is_full}')
-            # self.task.screenshot(
-            #     f'is_con_full not full but percent greater than 1, set to 0.99, {percent} {max_is_full}',
-            #     cropped)
-            percent = 0.99
-        if percent > 1:
-            self.logger.error(f'is_con_full percent greater than 1, set to 1, {percent} {max_is_full}')
-            self.task.screenshot(f'is_con_full percent greater than 1, set to 1, {percent} {max_is_full}', cropped)
-            percent = 1
-        # self.logger.info(
-        #     f'is_con_full {self} {percent} {max_area}/{self.config.get("_full_ring_area", 0)} {color_index} ')
-        # if self.task.debug:
-        #     self.task.screenshot(
-        #         f'is_con_full {self} {percent} {max_area}/{self.config.get("_full_ring_area", 0)} {color_index} ',
-        #         cropped)
-        box.confidence = percent
-        self.current_con = percent
-        self.task.draw_boxes(f'is_con_full_{self}', box)
-        if percent > 1:
-            percent = 1
-        return percent
+        self.current_con = self.task.get_current_con(self.config)
+        return self.current_con
 
     def is_forte_full(self):
         box = self.task.box_of_screen_scaled(3840, 2160, 2251, 1993, 2311, 2016, name='forte_full', hcenter=True)
@@ -443,17 +393,6 @@ class BaseChar:
                 return False
             else:
                 return self.is_available(snap, 'liberation')
-        # else:
-        #     mark_to_check = char_lib_check_marks[self.index]
-        #     box = self.task.get_box_by_name(mark_to_check)
-        #     box = box.copy(x_offset=-box.width, y_offset=-box.height, width_offset=box.width * 2,
-        #                    height_offset=box.height * 2)
-        #     for match in char_lib_check_marks:
-        #         mark = self.task.find_one(match, box=box, canny_lower=10, canny_higher=80, threshold=0.8)
-        #         if mark is not None:
-        #             self.logger.debug(f'{self.__repr__()} liberation ready by checking mark {mark}')
-        #             self.liberation_available_mark = True
-        #             return True
 
     def __str__(self):
         return self.__repr__()
@@ -495,77 +434,6 @@ class BaseChar:
     def flying(self):
         return self.current_resonance() == 0
 
-    def count_rings(self, image, color_range, min_area):
-        # Define the color range
-        lower_bound, upper_bound = color_range_to_bound(color_range)
-
-        image_with_contours = image.copy()
-
-        # Create a binary mask
-        mask = cv2.inRange(image, lower_bound, upper_bound)
-
-        # Find connected components
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
-
-        colors = [
-            (0, 255, 0),  # Green
-            (0, 0, 255),  # Red
-            (255, 0, 0),  # Blue
-            (0, 255, 255),  # Yellow
-            (255, 0, 255),  # Magenta
-            (255, 255, 0)  # Cyan
-        ]
-
-        # Function to check if a component forms a ring
-        def is_full_ring(component_mask):
-            # Find contours
-            contours, _ = cv2.findContours(component_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            if len(contours) != 1:
-                return False
-            contour = contours[0]
-
-            # Check if the contour is closed by checking if the start and end points are the same
-            # if cv2.arcLength(contour, True) > 0:
-            #     return True
-            # Approximate the contour with polygons.
-            epsilon = 0.05 * cv2.arcLength(contour, True)
-            approx = cv2.approxPolyDP(contour, epsilon, True)
-
-            # Check if the polygon is closed (has no gaps) and has a reasonable number of vertices for a ring.
-            if not cv2.isContourConvex(approx) or len(approx) < 4:
-                return False
-
-            # All conditions met, likely a close ring.
-            return True
-
-        # Iterate over each component
-        ring_count = 0
-        is_full = False
-        the_area = 0
-        for label in range(1, num_labels):
-            x, y, width, height, area = stats[label, :5]
-            bounding_box_area = width * height
-            component_mask = (labels == label).astype(np.uint8) * 255
-            contours, _ = cv2.findContours(component_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            color = colors[label % len(colors)]
-            cv2.drawContours(image_with_contours, contours, -1, color, 2)
-            if bounding_box_area >= min_area:
-                # Select a color from the list based on the label index
-                if is_full_ring(component_mask):
-                    is_full = True
-                the_area = area
-                ring_count += 1
-
-        # if self.task.debug:
-        # Save or display the image with contours
-        # cv2.imwrite(f'test\\test_{self}_{is_full}_{the_area}_{lower_bound}.jpg', image_with_contours)
-        if ring_count > 1:
-            is_full = False
-            the_area = 0
-            self.logger.warning(f'is_con_full found multiple rings {ring_count}')
-
-        return the_area, is_full
-
 
 forte_white_color = {
     'r': (244, 255),  # Red range
@@ -578,36 +446,3 @@ dot_color = {
     'g': (195, 255),  # Green range
     'b': (195, 255)  # Blue range
 }
-
-con_colors = [
-    {
-        'r': (205, 235),
-        'g': (190, 222),  # for yellow spectro
-        'b': (90, 130)
-    },
-    {
-        'r': (150, 190),  # Red range
-        'g': (95, 140),  # Green range for purple electric
-        'b': (210, 249)  # Blue range
-    },
-    {
-        'r': (200, 230),  # Red range
-        'g': (100, 130),  # Green range    for red fire
-        'b': (75, 105)  # Blue range
-    },
-    {
-        'r': (60, 95),  # Red range
-        'g': (150, 180),  # Green range    for blue ice
-        'b': (210, 245)  # Blue range
-    },
-    {
-        'r': (70, 110),  # Red range
-        'g': (215, 250),  # Green range    for green wind
-        'b': (155, 190)  # Blue range
-    },
-    {
-        'r': (190, 220),  # Red range
-        'g': (65, 105),  # Green range    for havoc
-        'b': (145, 175)  # Blue range
-    }
-]

@@ -20,8 +20,6 @@ class Jinhsi(BaseChar):
         elif self.has_intro or self.incarnation_cd:
             self.handle_intro()
             return self.switch_next_char()
-        if self.time_elapsed_accounting_for_freeze(self.task.combat_start) < 5 or self.last_fly_e_time == 0:
-            self.click_liberation()
         self.click_echo()
         return self.switch_next_char()
 
@@ -35,13 +33,15 @@ class Jinhsi(BaseChar):
         super().switch_next_char(free_intro=self.has_free_intro, target_low_con=True)
         self.has_free_intro = False
 
-    def do_get_switch_priority(self, current_char: BaseChar, has_intro=False):
+    def do_get_switch_priority(self, current_char: BaseChar, has_intro=False, target_low_con=False):
         if has_intro or self.incarnation or self.incarnation_cd:
             self.logger.info(
                 f'switch priority max because has_intro {has_intro} incarnation {self.incarnation} incarnation_cd {self.incarnation_cd}')
             return Priority.MAX
-        else:
+        elif self.echo_available():
             return super().do_get_switch_priority(current_char, has_intro)
+        else:
+            return Priority.MIN
 
     def count_base_priority(self):
         return -3
@@ -123,12 +123,6 @@ class Jinhsi(BaseChar):
             if self.task.debug:
                 self.task.screenshot(f'handle_intro e end {time.time() - start}')
             break
-        # if time.time() - start < 2:
-        #     self.logger.info(f'handle_intro fly e in_cd {time.time() - start}')
-        #     self.incarnation_cd = True
-        #     if not self.click_echo():
-        #         self.task.click()
-        #     return
         self.last_fly_e_time = start
         if self.click_liberation(send_click=True):
             self.continues_normal_attack(0.3)

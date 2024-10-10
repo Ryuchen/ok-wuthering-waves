@@ -1,8 +1,8 @@
-import re
 import time
 
 import cv2
 
+import re
 from ok.color.Color import find_color_rectangles, get_mask_in_color_range, is_pure_black
 from ok.feature.Box import find_boxes_by_name
 from ok.logging.Logger import get_logger
@@ -25,7 +25,7 @@ class CombatCheck:
         self.boss_health_box = None
         self.boss_health = None
         self.out_of_combat_reason = ""
-        self.combat_check_interval = 0.8
+        self.combat_check_interval = 1
         self._last_liberation = 0
 
     @property
@@ -44,16 +44,16 @@ class CombatCheck:
         if is_pure_black(self.frame):
             logger.error('getting a pure black frame for unknown reason, reset_to_false return true')
             return True
-        if recheck and time.time() - self.last_out_of_combat_time > 2.1:
+        if recheck:
             logger.info('out of combat start double check')
             if self.debug:
                 self.screenshot('out of combat start double check')
-            self.last_out_of_combat_time = time.time()
-            return True
-        else:
-            self.out_of_combat_reason = reason
-            self.do_reset_to_false()
-            return False
+            if self.wait_until(self.check_health_bar, time_out=1.2, wait_until_before_delay=0,
+                               wait_until_check_delay=0):
+                return True
+        self.out_of_combat_reason = reason
+        self.do_reset_to_false()
+        return False
 
     def do_reset_to_false(self):
         self._in_combat = False
@@ -102,6 +102,8 @@ class CombatCheck:
         if self.boss_lv_box is not None:
             current = self.boss_lv_box.crop_frame(self.frame)
         else:
+            self.boss_lv_template = None
+            self.boss_lv_box = None
             current = None
         max_val = 0
         if current is not None:
@@ -112,16 +114,12 @@ class CombatCheck:
                 self.screenshot_boss_lv(current, f'boss lv not detected by edge {max_val}')
             logger.debug(f'boss lv not detected by edge')
             if not self.find_boss_lv_text():  # double check by text
-                if not self.check_health_bar() and not self.find_target_enemy():
-                    if self.debug:
-                        self.screenshot_boss_lv(current, 'out_of combat boss_health disappeared')
-                    logger.info(f'out of combat because of boss_health disappeared, res:{max_val}')
-                    return False
-                else:
-                    self.boss_lv_template = None
-                    self.boss_lv_box = None
-                    logger.info(f'boss_health disappeared, but still in combat')
-                    return True
+                if self.debug:
+                    self.screenshot_boss_lv(current, 'out_of combat boss_health disappeared')
+                self.boss_lv_template = None
+                self.boss_lv_box = None
+                logger.info(f'out of combat because of boss_health disappeared, res:{max_val}')
+                return False
             else:
                 return True
         else:
@@ -145,43 +143,46 @@ class CombatCheck:
     def find_target_enemy(self):
         start = time.time()
         target_enemy = self.find_one('target_enemy_white', box=self.target_area_box,
-                                     use_gray_scale=True, threshold=0.83,
-                                     frame_processor=process_target_enemy_area)
-        # if self.debug and target_enemy is not None:
-        #     self.screenshot('find_target_enemy')
+                                     use_gray_scale=True, threshold=0.85,
+                                     frame_processor=keep_only_white)
+        if self.debug and target_enemy is None:
+            self.screenshot('find_target_enemy')
         logger.debug(f'find_target_enemy {target_enemy} {time.time() - start}')
         return target_enemy is not None
 
-    def in_combat(self, rechecked=False):
+    def in_combat(self, check_team=True):
         if self.in_liberation or self.recent_liberation():
-            # logger.debug('in liberation return True')
             return True
         if self._in_combat:
             now = time.time()
             if now - self.last_combat_check > self.combat_check_interval:
                 self.last_combat_check = now
-                if not self.in_team()[0]:
+                if check_team and not self.in_team()[0]:
+                    logger.info('not in team break out of combat')
                     return self.reset_to_false(recheck=False, reason="not in team")
+                if not self.check_target_enemy():
+                    return self.reset_to_false(recheck=False, reason="no target enemy")
                 if self.check_count_down():
-                    return True
+                    return self.log_time(now, 'check_count_down')
                 if self.boss_lv_template is not None:
-                    if self.wait_until(self.check_boss, time_out=2, wait_until_before_delay=0):
-                        return True
-                    else:
-                        return self.reset_to_false(recheck=False, reason="boss disappear")
+                    if self.check_boss():
+                        return self.log_time(now, 'check_boss')
                 if self.check_health_bar():
-                    return True
+                    return self.log_time(now, 'check_health_bar')
+                if self.find_target_enemy():
+                    return self.log_time(now, 'find_target_enemy')
                 if self.ocr_lv_text():
-                    return True
+                    return self.log_time(now, 'ocr_lv_text')
+                self.next_frame()
                 if self.target_enemy():
-                    return True
-                logger.error('target_enemy failed, break out of combat')
-                return self.reset_to_false(reason='target enemy failed')
+                    return self.log_time(now, 'target_enemy')
+                logger.error('target_enemy failed, try recheck break out of combat')
+                return self.reset_to_false(recheck=True, reason='target enemy failed')
             else:
                 return True
         else:
             start = time.time()
-            in_combat = self.in_team()[0] and self.check_health_bar()
+            in_combat = ((not check_team) or self.in_team()[0]) and self.check_health_bar()
             if in_combat:
                 self.target_enemy(wait=False)
                 if self.boss_lv_template is None:
@@ -191,11 +192,31 @@ class CombatCheck:
                 self._in_combat = True
                 return True
 
+    def log_time(self, start, name):
+        logger.debug(f'check cost {name} {time.time() - start}')
+        return True
+
     def ocr_lv_text(self):
         lvs = self.ocr(box=self.target_area_box,
                        match=re.compile(r'lv\.\d{1,3}', re.IGNORECASE),
                        target_height=540, name='lv_text', log=True)
         return lvs
+
+    def check_target_enemy(self):
+        if self.calculate_color_percentage(text_white_color,
+                                           self.get_box_by_name('box_target_enemy')) == 0:
+            logger.info(f'check target_enemy failed, wait 3 seconds')
+            if self.wait_until(lambda: self.calculate_color_percentage(text_white_color,
+                                                                       self.get_box_by_name('box_target_enemy')) != 0,
+                               wait_until_before_delay=0, wait_until_check_delay=0,
+                               time_out=5):
+                return True
+            self.log_error(
+                "Auto combat error: Make sure you're equipping echos and turn off effect that changes the game color, (Game Gammar/Nvidia AMD Game Filter), turn off Motion Blur in game video options",
+                notify=True, tray=True)
+            self.screenshot('check_target_enemy')
+            self.pause()
+        return True
 
     def target_enemy(self, wait=True):
         if not wait:
@@ -203,8 +224,9 @@ class CombatCheck:
         else:
             if self.find_target_enemy():
                 return True
-            self.middle_click()
-            return self.wait_until(self.find_target_enemy, time_out=2.5, wait_until_before_delay=0)
+            return self.wait_until(self.find_target_enemy, time_out=2.5, wait_until_before_delay=0,
+                                   wait_until_check_delay=0.1,
+                                   pre_action=self.middle_click)
 
     def check_health_bar(self):
         if self._in_combat:
@@ -237,6 +259,10 @@ class CombatCheck:
     def find_boss_lv_text(self):
         texts = self.ocr(box=self.box_of_screen(1269 / 3840, 10 / 2160, 2533 / 3840, 140 / 2160, hcenter=True),
                          target_height=540, name='boss_lv_text')
+        fps_text = find_boxes_by_name(texts,
+                                      re.compile(r'FPS', re.IGNORECASE))
+        if fps_text:
+            raise Exception('FPS text detected on screen, please close any FPS overlay!')
         boss_lv_texts = find_boxes_by_name(texts,
                                            [re.compile(r'(?i)^L[Vv].*')])
         if len(boss_lv_texts) > 0:
@@ -265,7 +291,7 @@ class CombatCheck:
 count_down_re = re.compile(r'\d\d')
 
 
-def process_target_enemy_area(frame):
+def keep_only_white(frame):
     frame[frame != 255] = 0
     return frame
 
