@@ -8,74 +8,136 @@ on:
 
 jobs:
   build:
-    name: Build exe with PyInstaller
+    name: Build exe with launcher
     runs-on: windows-latest
+
+    env:
+      PYTHONIOENCODING: 'UTF-8'
+
+    strategy:
+      matrix:
+        python-version: [ 3.12 ]
+
     steps:
-      - uses: actions/checkout@v2
-        name: Checkout code
+      - name: Configure git
+        run: |
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global user.email "ok-oldking@users.noreply.github.com"
+          git config --global user.name "ok-oldking"
+          echo "action_state=yellow" >> $env:GITHUB_ENV
+          echo "${{ env.action_state }}"
+
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Important: fetch all history for all tags and branches
+          lfs: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set UTF-8 encoding
+        run: |
+          set PYTHONIOENCODING=utf-8
+          set PYTHONLEGACYWINDOWSSTDIO=utf-8
+          echo PYTHONIOENCODING=utf-8 >> $GITHUB_ENV
 
       - name: Get Changes between Tags
         id: changes
         uses: simbo/changes-between-tags-action@v1
         with:
+          include-hashes: false
           validate-tag: false
 
       - name: Get tag name
         id: tagName
         uses: olegtarasov/get-tag@v2.1.3
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'  # Use the version of Python you need
 
       - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller  # Add other dependencies if needed
           pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Copy ok-script lib
+        run: |
+          python -m ok.update.copy_ok_folder
+
+      - name: Rename .py files to .pyx
+        run: |
+          Get-ChildItem -Path .\src -Recurse -Filter *.py -Exclude '__init__.py' | ForEach-Object { Rename-Item $_.FullName -NewName ($_.FullName -replace '\.py$', '.pyx') }
+
+      - name: build cython
+        run: |
+          python setup.py build_ext --inplace
+          Get-ChildItem -Path .\src -Recurse -Filter *.pyx | ForEach-Object { Remove-Item $_.FullName }
+          Get-ChildItem -Path .\src -Recurse -Filter *.cpp | ForEach-Object { Remove-Item $_.FullName }
+
+      - name: Run tests
+        run: |
+          Get-ChildItem -Path ".\tests\*.py" | ForEach-Object {
+              Write-Host "Running tests in $($_.FullName)"
+              try {
+                  # Run the Python unittest command
+                  python -m unittest $_.FullName
+
+                  # Check if the previous command succeeded
+                  if ($LASTEXITCODE -ne 0) {
+                      throw "Tests failed in $($_.FullName)"
+                  }
+              } catch {
+                  # Stop the loop and return the error
+                  Write-Error $_
+                  exit 1
+              }
+          }
 
       - name: Build Executable
         run: |
           echo "tag: ${{ steps.changes.outputs.tag }}"
           echo "changes: ${{ steps.changes.outputs.changes }}"
-          echo ${{ github.sha }} > Release.txt
-          (Get-Content config.py) -replace 'version = "v\d+\.\d+\.\d+"', 'version = "${{ steps.tagName.outputs.tag }}"' | Set-Content config.py
-          pyinstaller main.spec
-          copy 免责声明.txt .\dist\bundle\
-          python -m ok.update.gen_md5 .\dist\bundle
-          mv dist/bundle ok-ww
-          7z a -t7z -r "ok-ww-release-${{ steps.tagName.outputs.tag }}.7z" "ok-ww"        
+          
+          python -m ok.update.package_launcher ${{ steps.tagName.outputs.tag }} deploy.txt
+          Copy-Item -Path "dist" -Destination "ok-ww" -Recurse
+          7z a -t7z -r "ok-ww-${{ steps.tagName.outputs.tag }}.7z" "ok-ww"     
+          Remove-Item -Path "ok-ww" -Recurse -Force
 
         shell: pwsh
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
           body: |
-            下载7z的压缩包,解压运行exe,Updates：
-            ${{ steps.changes.outputs.changes }} 
+            * 下载 ok-ww.7z, Download ok-ww.7z
+            * 不要下载SourceCode Do Not Download the SourceCode
+            * 如果下载过慢可以使用加速或者使用下面渠道下载
+            * [Mirror酱下载渠道](https://mirrorchyan.com/zh/projects?rid=okww), 国内网页直链, 下载需要购买CD-KEY, 已有Mirror酱CD-KEY可免费下载
+            * [夸克网盘](https://pan.quark.cn/s/a1052cec4d13), 免费, 但需要注册并下载夸克网盘客户端
+
           draft: false
-          prerelease: true
+          prerelease: false
+          files: |
+            ok-ww-${{ steps.tagName.outputs.tag }}.7z
 
-      - name: upload-win
-        uses: actions/upload-release-asset@v1
+      - name: push to ok-ww-update
+        run: |
+          python -m ok.update.push_repos --repos https://ok-oldking:${{ secrets.OK_GH }}@github.com/ok-oldking/ok-ww-update --files deploy.txt --tag ${{ steps.tagName.outputs.tag }}
+
+
+      - name: push to cnb
+        run: |
+          python -m ok.update.push_repos --repos https://cnb:${{ secrets.CNB_TOKEN }}@cnb.cool/ok-oldking/ok-wuthering-waves.git --files deploy.txt --tag ${{ steps.tagName.outputs.tag }}
+
+      - name: Trigger MirrorChyanUploading
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          gh workflow run --repo $GITHUB_REPOSITORY mirrorchyan_uploading
+          gh workflow run --repo $GITHUB_REPOSITORY mirrorchyan_release_note
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./ok-ww-release-${{ steps.tagName.outputs.tag }}.7z
-          asset_name: ok-ww-release-${{ steps.tagName.outputs.tag }}.7z
-          asset_content_type: application/zip
-
-
-
-
-
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

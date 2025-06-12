@@ -7,11 +7,21 @@ assignees: ok-oldking
 
 ---
 
+### 评论小于5个的ISSUE不会回复 (新版本的BUG除外)
+
+先搜索现有ISSUE:
+[https://github.com/ok-oldking/ok-wuthering-waves/issues?q=](https://github.com/ok-oldking/ok-wuthering-waves/issues?q=)
+
 请先挨个检查:
 [常见问题](https://github.com/ok-oldking/ok-wuthering-waves/blob/master/README_cn.md#出现问题请检查)
 
-搜索现有ISSUE:
-[https://github.com/ok-oldking/ok-wuthering-waves/issues?q=](https://github.com/ok-oldking/ok-wuthering-waves/issues?q=)
+讨论区
+[https://github.com/ok-oldking/ok-wuthering-waves/discussions](https://github.com/ok-oldking/ok-wuthering-waves/discussions)
+
+
+只处理老版本没问题, 新版本会出现的BUG. 其他问题请通过上面的方法解决.
+如有角色适配不好, 可能是我没抽或者不玩, 如需改进可以自己提PR, 将来可能跳大多数角色.
+可以尝试使用支持好的角色.
 
 描述错误:
 [请清晰简洁地描述错误是什么]
@@ -31,7 +41,10 @@ assignees: ok-oldking
 录屏:
 最好有录屏上传QQ频道
 
-脚本软件版本：
+ok-ww出现bug的版本：
+[如]1.1.1
+
+ok-ww最近未出现bug的版本：
 [如]1.1.1
 
 windows操作系统:

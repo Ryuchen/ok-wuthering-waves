@@ -1,18 +1,17 @@
+.venv
 updates/
 working/
+update/
 tesseract
 models
 fonts
-_internal/
 # Byte-compiled / optimized / DLL files
 .idea/
 __pycache__/
 *.py[cod]
 *$py.class
 configs/
-ok/
-ok
-*.exe
+paddle_model/
 md5.txt
 update.bat
 click_screenshots/
@@ -20,12 +19,17 @@ test_scripts/
 screenshots/
 thread_dumps.txt
 # C extensions
+ok
+ok/
+*.cpp
+*.pyx
 *.so
 *.bat
-
+**/__pycache__/
 # Distribution / packaging
 .Python
-test/
+tests/configs/
+tests/logs/
 logs/
 build/
 develop-eggs/
@@ -45,6 +49,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 venv/
+python/
 
 # PyInstaller
 # Usually these files are written by a python script from a template
@@ -56,3 +61,4 @@ pip-log.txt
 pip-delete-this-directory.txt
 autohelper
 working_images/
+repo/

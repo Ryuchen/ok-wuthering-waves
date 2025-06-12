@@ -1,302 +1,132 @@
-import re
-
 import cv2
 import numpy as np
 
-from ok.feature.Box import find_boxes_by_name, find_boxes_within_boundary
-from ok.logging.Logger import get_logger
+import re
+from ok import find_boxes_by_name, find_boxes_within_boundary, Logger
 from src.task.BaseCombatTask import BaseCombatTask
 
-logger = get_logger(__name__)
+logger = Logger.get_logger(__name__)
+chinese_regex = re.compile(r'[\u4e00-\u9fff]{5,12}')
 
 
 class FiveToOneTask(BaseCombatTask):
 
-    def __init__(self):
-        super().__init__()
-        self.description = "数据坞五合一 + 自动上锁, 游戏语言必须为简体中文,必须16:9分辨率"
-        self.name = "在数据坞五合一界面启动"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.description = "游戏语言必须为简体中文,必须16:9分辨率,使用1600x900以上分辨率, 勾选需要的, 没勾的都会自动合成"
+        self.name = "数据坞五合一"
         self.default_config = {
-            '处理声骸COST': ["4", "3", "1"],
-            '4C舍弃': ["主属性攻击力百分比", "主属性防御力百分比", "主属性生命值百分比"],
-            '锁定_1C_生命': [],
-            '锁定_1C_防御': [],
-            '锁定_1C_攻击': [
-                '凝夜白霜', '熔山裂谷', '彻空冥雷', '啸谷长风', '浮星祛暗', '沉日劫明', '隐世回光', '轻云出月',
-                '不绝余音'],
-            '锁定_3C_生命': [],
-            '锁定_3C_防御': [],
-            '锁定_3C_攻击': [],
-            '锁定_3C_气动伤害加成': ['啸谷长风', '轻云出月'],
-            '锁定_3C_热熔伤害加成': ['熔山裂谷', '轻云出月'],
-            '锁定_3C_导电伤害加成': ['彻空冥雷', '轻云出月'],
-            '锁定_3C_衍射伤害加成': ['浮星祛暗', '轻云出月'],
-            '锁定_3C_湮灭伤害加成': ['沉日劫明', '轻云出月'],
-            '锁定_3C_冷凝伤害加成': ['凝夜白霜', '轻云出月'],
-            '锁定_3C_共鸣效率': [
-                '凝夜白霜', '熔山裂谷', '彻空冥雷', '啸谷长风', '浮星祛暗', '沉日劫明', '隐世回光', '轻云出月',
-                '不绝余音'],
-            # '锁定_4C_暴击': ['凝夜白霜', '熔山裂谷', '彻空冥雷', '啸谷长风', '浮星祛暗', '沉日劫明', '隐世回光',
-            #                  '轻云出月',
-            #                  '不绝余音'],
-            # '锁定_4C_暴击伤害': ['凝夜白霜', '熔山裂谷', '彻空冥雷', '啸谷长风', '浮星祛暗', '沉日劫明', '隐世回光',
-            #                      '轻云出月',
-            #                      '不绝余音'],
-            # '锁定_4C_治疗效果加成': ['隐世回光'],
-            # '锁定_4C_生命': [],
-            # '锁定_4C_防御': [],
-            # '锁定_4C_攻击': [],
         }
         self.sets = [
-            '凝夜白霜', '熔山裂谷', '彻空冥雷', '啸谷长风', '浮星祛暗', '沉日劫明', '隐世回光', '轻云出月', '不绝余音']
+            '凝夜白霜', '熔山裂谷', '彻空冥雷', '啸谷长风', '浮星祛暗', '沉日劫明', '隐世回光', '轻云出月', '不绝余音',
+            '凌冽决断之心',
+            '此间永驻之光', '幽夜隐匿之帷', '高天共奏之曲', '无惧浪涛之勇', '流云逝尽之空']
+        # , '愿戴荣光之旅',   '奔狼燎原之焰',
 
-        self.main_stats = ["攻击", "防御", "生命", "共鸣效率", "冷凝伤害加成", "热熔伤害加成", "导电伤害加成",
-                           "气动伤害加成", "衍射伤害加成", "湮灭伤害加成", "治疗效果加成", "暴击", "暴击伤害"]
-        self.fix_map = {'凝夜自霜': '凝夜白霜', '灭伤害加成': '湮灭伤害加成', '行射伤害加成': '衍射伤害加成'}
+        self.main_stats = ["攻击力百分比", "生命值百分比", "防御力百分比", "暴击率", "暴击伤害", "共鸣效率",
+                           "冷凝伤害加成",
+                           "热熔伤害加成",
+                           "导电伤害加成",
+                           "气动伤害加成", "衍射伤害加成", "湮灭伤害加成", "治疗效果加成"]
+        self.all_stats = []
+        self.black_list = ["主属性生命值", "主属性攻击力", "主属性防御力"]
+        for main_stat in self.main_stats:
+            self.all_stats.append("主属性" + main_stat)
+        for black in self.black_list:
+            self.all_stats.append(re.compile(black))
+
+        self.add_text_fix(
+            {'凝夜自霜': '凝夜白霜', '主属性灭伤害加成': '主属性湮灭伤害加成', "灭伤害加成": "主属性湮灭伤害加成",
+             '主属性行射伤害加成': '主属性衍射伤害加成'})
 
         self.config_type = {}
+        self.claim_handled = False
+        for set_name in self.sets:
+            self.default_config[set_name] = []
         for key in self.default_config.keys():
-            if key == "处理声骸COST":
-                self.config_type[key] = {'type': "multi_selection",
-                                         'options': self.default_config[key]}
-            elif key == "4C舍弃":
-                self.config_type[key] = {'type': "multi_selection",
-                                         'options': self.default_config[key] + ["全部未加锁"]}
-            else:
-                self.config_type[key] = {'type': "multi_selection", 'options': self.sets}
-
-        self.first_echo_x = 326 / 3840
-        self.first_echo_y = 178 / 2160
-        self.echo_x_distance = (2215 - 343) / 7 / 3840
-        self.echo_y_distance = (1678 - 421) / 4 / 2160
-        self.echo_per_row = 8
-        self.confirmed = False
-        self.current_cost_index = 0
-        self.current_cost = None
+            self.config_type[key] = {'type': "multi_selection", 'options': self.main_stats}
 
     def run(self):
-        self.current_cost_index = 0
-        self.current_cost = None
-        while self.loop_merge():
-            pass
+        self.log_debug(f"all_stats: {self.all_stats}")
+        self.log_info("开始任务")
+        self.ensure_main()
+        self.log_info("在主页")
+        self.back()
+        self.wait_click_ocr(match="数据坞", box="right", raise_if_not_found=True, settle_time=0.2)
+        self.wait_ocr(match="数据坞", box="top_left", raise_if_not_found=True, settle_time=0.2)
+        self.click_relative(0.04, 0.56, after_sleep=0.5)
+        self.wait_click_ocr(match="批量融合", box="bottom_right", raise_if_not_found=True, settle_time=0.2)
+        self.loop_merge()
+        self.log_info("五合一完成!")
 
-    def incr_cost_filter(self):
-        to_handle = self.config.get('处理声骸COST', [])
-        if len(to_handle) > self.current_cost_index:
-            self.current_cost = to_handle[self.current_cost_index]
-            self.current_cost_index += 1
-            if self.current_cost == '4' and not self.config.get('4C舍弃'):
-                self.log_info(f'4C 什么都没选!')
-                return self.incr_cost_filter()
-            else:
-                self.set_filter()
-            return True
+    def loop_merge(self):
+        name_box = self.box_of_screen(0.11, 0.19, 0.87, 0.75)
+        for set_name in self.sets:
+            self.merge_set(name_box, set_name, 1)
+            self.merge_set(name_box, set_name, 2)
+
+    def ocr_main_stats(self):
+        name_box = self.box_of_screen(0.11, 0.19, 0.87, 0.75)
+        return self.ocr(box=name_box, threshold=0.1)
+
+    def merge_set(self, name_box, set_name, step):
+        keeps = self.config.get(set_name, [])
+        if step == 2 and "攻击力百分比" not in keeps:  # 4C攻击力
+            self.log_info("没有选择攻击力百分比, 跳过第二步")
+            return
+        self.click_relative(0.03, 0.91, after_sleep=0.3)
+        if step == 1:
+            self.click_relative(0.62, 0.82, after_sleep=0.01)  # 重置
+
+        self.click_relative(0.20, 0.71, after_sleep=0.01)  # 1c
+        self.click_relative(0.47, 0.71, after_sleep=0.01)  # 3c
+        if step == 1:
+            self.click_relative(0.71, 0.71, after_sleep=0.01)  # 4c
+        if step == 1:
+            self.click_relative(0.895, 0.57, after_sleep=0.5)  # 滚动
+            self.wait_click_ocr(box=name_box, match=re.compile(set_name), raise_if_not_found=True,
+                                after_sleep=0.2)
+            self.wait_feature("merge_echo_check", box=name_box, raise_if_not_found=True)
+        self.click_relative(0.895, 0.74, after_sleep=0.5)  # 滚动
+        choices = self.ocr(box=name_box, match=self.all_stats)
+        if step == 1:
+            if len(choices) != 16:
+                raise Exception(f"属性列表识别失败! {choices}")
+            for choice in choices:
+                in_keep = False
+                in_black_list = False
+                for black in self.black_list:
+                    if black in choice.name and "百分比" not in choice.name:
+                        in_black_list = True
+                        break
+                if in_black_list:
+                    self.log_debug(f'跳过黑名单 {choice.name}')
+                    continue
+                for keep in keeps:
+                    if keep in choice.name:
+                        in_keep = True
+                        break
+                if not in_keep:
+                    self.click_box(choice, after_sleep=0.01)
+                    self.log_info(f"不在配置 {set_name} {choice.name} 选择合成!")
         else:
-            return False
-
-    def set_filter(self):
-        self.log_info(f'increase cost filter {self.current_cost}')
-        self.click_relative(0.04, 0.91)
-        self.sleep(1)
-        boxes = self.ocr(0.11, 0.31, 0.90, 0.88, target_height=720, log=True)
-        self.click(find_boxes_by_name(boxes, names='重置'), after_sleep=1)
-        self.click(find_boxes_by_name(boxes, names='五星'), after_sleep=1)
-        self.click(find_boxes_by_name(boxes, names=re.compile(f'ost{self.current_cost}')), after_sleep=1)
-
-        if self.current_cost == '4':
-            if "全部未加锁" in self.config.get('4C舍弃'):
-                self.logger.info('全部舍弃4C')
-            else:
-                for throw in self.config.get('4C舍弃'):
-                    self.click(find_boxes_by_name(boxes, names=throw), after_sleep=1)
-
-        self.click(find_boxes_by_name(boxes, names='确定'), after_sleep=2)
-        self.click_empty_area()
-
-    def click_empty_area(self):
-        self.click_relative(0.95, 0.51, after_sleep=2)
-
-    def check_ui(self):
-        put = self.ocr(0.46, 0.64, 0.58, 0.69)
-        if len(put) == 1:
-            if put[0].name == "清除":
-                self.click(put, after_sleep=1)
-                return True
-            elif put[0].name == '自动放入':
-                return True
-
-    def fix_ocr_texts(self, texts):
-        for text in texts:
-            if fix := self.fix_map.get(text.name):
-                text.name = fix
-
-    def try_add_or_remove_five(self):
-        self.log_info('try_add_five')
-        self.click(self.get_box_by_name('box_data_merge_add_clear'))
-        self.sleep(0.5)
-        last_slot = self.find_one('data_merge_last_add_slot')
-        return last_slot is None
-
-    def check_and_lock(self, start_col):
-        lock_count = 0
-
-        for col in range(start_col, 5):
-            x, y = self.get_pos(0, col)
-            texts = self.wait_until(self.ocr_echo_texts,
-                                    pre_action=lambda: self.click_relative(x - self.echo_x_distance / 3,
-                                                                           y + self.echo_x_distance / 3),
-                                    wait_until_before_delay=0.8, raise_if_not_found=True)
-
-            set_name = self.find_set_name(texts)
-
-            main_stat_boundary = self.box_of_screen(0.63, 0.40, 0.77, 0.47)
-            main_stat_box = find_boxes_within_boundary(texts, main_stat_boundary)
-            main_stat = "None"
-            if main_stat_box and len(main_stat_box) == 1:
-                main_stat = main_stat_box[0].name
-            if main_stat not in self.main_stats:
-                self.log_error(f'无法识别声骸主属性{main_stat_box}', notify=True)
-                return 0, False
-
-            config_name = f'锁定_{self.current_cost}C_{main_stat}'
-
-            sets_to_lock = self.config.get(config_name, [])
-            self.log_info(f'识别声骸 {config_name} {set_name} {main_stat} ')
-            if set_name in sets_to_lock:
-                self.log_info(f'需要加锁 {config_name} {set_name} {main_stat} ')
-                self.click_relative(x, y)
-                self.sleep(1)
-                locked = self.wait_feature('echo_locked', threshold=0.9,
-                                           pre_action=lambda: self.click(self.get_box_by_name('echo_locked')),
-                                           wait_until_before_delay=1.5)
-                if not locked:
-                    self.log_info(f'加锁失败 {config_name} {set_name}', notify=True)
-                    return 0, False
-                logger.info(f'加锁成功 {config_name}  {set_name} {main_stat}  {locked}')
-                self.info['加锁数量'] = self.info.get('加锁数量', 0) + 1
-                lock_count += 1
-        return lock_count, True
-
-    def find_set_name(self, texts=None):
-        if texts is None:
-            texts = self.ocr_echo_texts()
-        sets = find_boxes_by_name(texts, self.sets)
-        if not sets:
-            set_name = self.find_set_by_template()
-            if not set_name:
-                raise Exception(f'无法识别声骸套装, 需要打开角色声骸界面,右上角点击切换一下简述')
-        else:
-            set_name = sets[0].name
-        return set_name
-
-    def loop_merge(self, skip_go_into_ui=False, start_col=0):
-        if not skip_go_into_ui:
-            self.go_into_merge_ui()
-            if self.current_cost_index == 0:
-                self.incr_cost_filter()
-
-        while not self.try_add_or_remove_five():
-            if not self.incr_cost_filter():
-                self.log_error(f'无法凑够五个声骸, 任务结束', notify=True)
-                return False
-
-        if self.current_cost != '4':
-            lock_count, success = self.check_and_lock(start_col)
-            if not success:
-                return False
-            self.click_empty_area()
-        else:
-            lock_count = 0
-
-        if lock_count > 0:
-            logger.info(f'本次加锁 {lock_count} 个, 重新添加5个')
-            if lock_count != 5:
-                self.try_add_or_remove_five()
-            return self.loop_merge(True, start_col=5 - lock_count)
-        else:
-            logger.info(f'没有加锁 开始合成')
-            self.click_relative(0.79, 0.91)
-            self.handle_confirm()
-            self.wait_ocr(0.45, 0.33, 0.55, 0.39, match='获得声骸', raise_if_not_found=True, time_out=15)
-            self.sleep(1)
-            self.click_relative(0.79, 0.91)
-            self.info['合成次数'] = self.info.get('合成次数', 0) + 1
-        return True
-
-    def handle_confirm(self):
-        if not self.confirmed:
-            confirm = self.wait_feature('data_merge_confirm_hcenter_vcenter', time_out=3, raise_if_not_found=False,
-                                        wait_until_before_delay=1.5)
-            if confirm:
-                self.click_relative(0.44, 0.55)
-                self.sleep(0.5)
-                self.click_box(confirm, relative_x=-1)
-            self.confirmed = True
-
-    def go_into_merge_ui(self):
-        if self.current_cost_index == 0:
-            add = self.check_ui()
-        else:
-            add = self.wait_until(self.check_ui, post_action=self.click_empty_area)
-        if not add:
-            raise Exception('请在5合1界面(关闭声骸列表)开始,并保持声骸未添加状态')
-        self.click(self.get_box_by_name('data_merge_hcenter_vcenter'))
-        self.wait_feature('data_merge_selection', raise_if_not_found=True, threshold=0.75,
-                          post_action=self.click_empty_area, time_out=15)
-        self.sleep(0.5)
-
-    def find_set_by_template(self):
-        box = self.get_box_by_name('box_set_name')
-        max_conf = 0
-        max_name = None
-        for i in range(len(self.sets)):
-            feature = self.find_one(f'set_name_{i}', box=box,
-                                    threshold=0.55, mask_function=mask_circle)
-            if feature and feature.confidence > max_conf:
-                max_conf = feature.confidence
-                max_name = self.sets[i]
-        logger.info(f'find_set_by_template: {max_name} {max_conf}')
-        return max_name
-
-    def ocr_echo_texts(self):
-        texts = self.ocr(0.60, 0.40, 0.83, 0.76, name='echo_stats', target_height=720, log=True)
-        self.fix_ocr_texts(texts)
-        if len(texts) > 4:
-            return texts
-        else:
-            return None
-
-    def find_cost(self, texts):
-        cost_boundary = self.box_of_screen(0.80, 0.24, 0.83, 0.29, name='cost_boundary')
-        cost_boxes = self.ocr(box=cost_boundary, log=True)
-        for box in cost_boxes:
-            extract = extract_number(box.name)
-            if extract is not None:
-                return extract
-
-    def get_pos(self, row, col):
-        return self.first_echo_x + col * self.echo_x_distance, self.first_echo_y + row * self.echo_y_distance
-
-
-def extract_number(text):
-    # Use regular expression to find the first occurrence of a number
-    match = re.search(r'\d+', text)
-    if match:
-        return int(match.group())
-    return None
-
-
-def mask_circle(image):
-    # Get the dimensions of the image
-    height, width = image.shape[:2]
-
-    # Calculate the center and axes of the ellipse
-    center = (width // 2, height // 2)
-    axes = (width // 2, height // 2)
-
-    # Create a mask with the same dimensions as the image
-    mask = np.zeros((height, width), dtype=np.uint8)
-
-    # Draw the ellipse on the mask
-    cv2.ellipse(mask, center, axes, 0, 0, 360, (255), thickness=-1)
-    return mask
+            for choice in choices:
+                if "攻击力百分比" in choice.name:
+                    self.click_box(choice, after_sleep=0.01)
+                    break
+        self.click_relative(0.81, 0.84, after_sleep=0.5)
+        while True:
+            self.click_relative(0.26, 0.91, after_sleep=0.5)  # 全选
+            self.click_relative(0.78, 0.9, after_sleep=1)
+            if not self.claim_handled:
+                if confirm := self.ocr(match="确认", box="bottom_right"):
+                    self.click_relative(0.49, 0.55, after_sleep=0.1)
+                    self.click_box(confirm, after_sleep=0.5)
+                    self.claim_handled = True
+            if self.ocr(match="批量融合", box="bottom_right"):
+                self.click_relative(0.26, 0.91, after_sleep=0.5)
+                self.log_info(f"{set_name} 不够5个")
+                break  # 没有更多
+            self.wait_ocr(match="获得声骸", box="top", raise_if_not_found=True, settle_time=1)
+            self.click_relative(0.53, 0.05, after_sleep=0.5)
+            self.click_relative(0.68, 0.91, after_sleep=0.5)  # 批量融合

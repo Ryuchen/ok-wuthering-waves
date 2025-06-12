@@ -1,20 +1,22 @@
 import time
 
-from ok.logging.Logger import get_logger
+from ok import Logger
 from src.task.BaseCombatTask import BaseCombatTask
+from src.task.WWOneTimeTask import WWOneTimeTask
 
-logger = get_logger(__name__)
+logger = Logger.get_logger(__name__)
 
 
-class DiagnosisTask(BaseCombatTask):
+class DiagnosisTask(WWOneTimeTask, BaseCombatTask):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.description = "Diagnosis Problem, Performance Test, Run in Game World"
         self.name = "Diagnosis"
         self.start = 0
 
     def run(self):
+        super().run()
         if not self.in_team()[0]:
             self.log_error('must be in game world and in teams, please check you game resolution is 16:9', notify=True)
             return
@@ -41,6 +43,7 @@ class DiagnosisTask(BaseCombatTask):
                 self.info['Echo Available'] = char.current_echo() > 0
                 self.info['Liberation in CD'] = char.has_cd('liberation')
                 self.info['Liberation Available'] = char.current_liberation() > 0
+                self.info['Concerto'] = char.get_current_con()
                 self.next_frame()
 
     def choose_level(self, start):
@@ -52,12 +55,12 @@ class DiagnosisTask(BaseCombatTask):
         self.click_relative(x, y + (start - 1) * distance)
         self.sleep(0.5)
 
-        self.wait_click_feature('gray_button_challenge', raise_if_not_found=True, use_gray_scale=True,
+        self.wait_click_feature('gray_button_challenge', raise_if_not_found=True,
                                 click_after_delay=0.5)
         self.wait_click_feature('gray_confirm_exit_button', relative_x=-1, raise_if_not_found=False,
-                                use_gray_scale=True, time_out=3, click_after_delay=0.5, threshold=0.8)
+                                time_out=3, click_after_delay=0.5, threshold=0.8)
         self.wait_click_feature('gray_start_battle', relative_x=-1, raise_if_not_found=True,
-                                use_gray_scale=True, click_after_delay=0.5, threshold=0.8)
+                               click_after_delay=0.5, threshold=0.8)
 
 
 echo_color = {

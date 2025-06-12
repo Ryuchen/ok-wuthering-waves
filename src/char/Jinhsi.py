@@ -5,8 +5,8 @@ from src.char.BaseChar import BaseChar, Priority
 
 class Jinhsi(BaseChar):
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.last_free_intro = 0  # free intro every 25 sec
         self.has_free_intro = False
         self.incarnation = False
@@ -20,8 +20,6 @@ class Jinhsi(BaseChar):
         elif self.has_intro or self.incarnation_cd:
             self.handle_intro()
             return self.switch_next_char()
-        if self.time_elapsed_accounting_for_freeze(self.task.combat_start) < 5 or self.last_fly_e_time == 0:
-            self.click_liberation()
         self.click_echo()
         return self.switch_next_char()
 
@@ -35,13 +33,13 @@ class Jinhsi(BaseChar):
         super().switch_next_char(free_intro=self.has_free_intro, target_low_con=True)
         self.has_free_intro = False
 
-    def do_get_switch_priority(self, current_char: BaseChar, has_intro=False):
+    def do_get_switch_priority(self, current_char: BaseChar, has_intro=False, target_low_con=False):
         if has_intro or self.incarnation or self.incarnation_cd:
             self.logger.info(
                 f'switch priority max because has_intro {has_intro} incarnation {self.incarnation} incarnation_cd {self.incarnation_cd}')
             return Priority.MAX
         else:
-            return super().do_get_switch_priority(current_char, has_intro)
+            return Priority.MIN
 
     def count_base_priority(self):
         return -3
@@ -94,41 +92,25 @@ class Jinhsi(BaseChar):
         self.logger.info(f'handle_incarnation  click_resonance end {time.time() - start}')
 
     def handle_intro(self):
-        # self.task.screenshot(f'handle_intro start')
         self.logger.info(f'handle_intro start')
         start = time.time()
-        if (self.time_elapsed_accounting_for_freeze(self.last_fly_e_time) < 10.5 or self.has_cd(
-                'resonance')) and not self.incarnation_cd:
-            self.incarnation_cd = True
-            self.click_echo()
-            self.logger.info(f'handle_intro in cd switch {start - self.last_fly_e_time}')
-            return
-
-        clicked_resonance = False
         while True:
+            elapsed = time.time() - start
+            if self.has_cd('resonance'):
+                if 0.3 < elapsed < 1.5:
+                    self.incarnation_cd = True
+                    # self.task.screenshot('incarnation_cd')
+                    if not self.click_echo():
+                        self.click()
+                    return
+                elif elapsed > 1.5:
+                    # self.task.screenshot('incarnation_finished')
+                    break
+            else:
+                self.send_resonance_key(interval=0.1)
             self.task.next_frame()
             self.check_combat()
-            if not self.has_cd('resonance'):
-                self.send_resonance_key(interval=0.1)
-                if not clicked_resonance:
-                    clicked_resonance = True
-                    self.last_fly_e_time = time.time()
-                continue
-            if time.time() - self.last_fly_e_time > 2.5:
-                break
-            if time.time() - start < 3:
-                if not clicked_resonance:
-                    self.task.click(interval=0.1)
-                continue
-            if self.task.debug:
-                self.task.screenshot(f'handle_intro e end {time.time() - start}')
-            break
-        # if time.time() - start < 2:
-        #     self.logger.info(f'handle_intro fly e in_cd {time.time() - start}')
-        #     self.incarnation_cd = True
-        #     if not self.click_echo():
-        #         self.task.click()
-        #     return
+
         self.last_fly_e_time = start
         if self.click_liberation(send_click=True):
             self.continues_normal_attack(0.3)

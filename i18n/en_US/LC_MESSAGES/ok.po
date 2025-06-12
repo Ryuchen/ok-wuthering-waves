@@ -39,9 +39,6 @@ msgstr ""
 msgid "Farm Echo in Dungeon"
 msgstr ""
 
-msgid "Farm World Boss(Must Drop a WayPoint on the Boss First)"
-msgstr ""
-
 msgid "Game Hotkey Config"
 msgstr ""
 
@@ -409,4 +406,343 @@ msgid "锁定_3C_防御"
 msgstr ""
 
 msgid "隐世回光"
+msgstr ""
+
+msgid "Auto Combat in Illusive Realm"
+msgstr ""
+
+msgid "Auto Combat in Multiplayer Mode"
+msgstr ""
+
+msgid "Enable auto combat in Multiplayer Mode"
+msgstr ""
+
+msgid "Illusive Realm"
+msgstr ""
+
+msgid "Fallacy of No Return"
+msgstr ""
+
+msgid "click Box(name='gray_book_all_monsters', x=53, y=713, width=104, height=107, confidence=77)"
+msgstr ""
+
+msgid "teleport to Fallacy of No Return index 6 in_dungeon False"
+msgstr ""
+
+msgid "index after scrolling down 6"
+msgstr ""
+
+msgid "2"
+msgstr ""
+
+msgid "5"
+msgstr ""
+
+msgid "6"
+msgstr ""
+
+msgid "7"
+msgstr ""
+
+msgid "All echoes not checked in the config will be discarded, click start in game world, must be in a 16:9 screen ratio"
+msgstr ""
+
+msgid "Boss"
+msgstr ""
+
+msgid "Celestial Light"
+msgstr ""
+
+msgid "Discard Echo"
+msgstr ""
+
+msgid "Discarded"
+msgstr ""
+
+msgid "Dreamless"
+msgstr ""
+
+msgid "Freezing Frost"
+msgstr ""
+
+msgid "Jue"
+msgstr ""
+
+msgid "Keep 1C ATK"
+msgstr ""
+
+msgid "Keep 1C DEF"
+msgstr ""
+
+msgid "Keep 1C HP"
+msgstr ""
+
+msgid "Keep 3C ATK"
+msgstr ""
+
+msgid "Keep 3C Aero DMG"
+msgstr ""
+
+msgid "Keep 3C DEF"
+msgstr ""
+
+msgid "Keep 3C Electro DMG"
+msgstr ""
+
+msgid "Keep 3C Energy Regen"
+msgstr ""
+
+msgid "Keep 3C Fusion DMG"
+msgstr ""
+
+msgid "Keep 3C Glacio DMG"
+msgstr ""
+
+msgid "Keep 3C HP"
+msgstr ""
+
+msgid "Keep 3C Havoc DMG"
+msgstr ""
+
+msgid "Keep 3C Spectro DMG"
+msgstr ""
+
+msgid "Keep 4C ATK"
+msgstr ""
+
+msgid "Keep 4C Crit"
+msgstr ""
+
+msgid "Keep 4C Crit DMG"
+msgstr ""
+
+msgid "Keep 4C DEF"
+msgstr ""
+
+msgid "Keep 4C HP"
+msgstr ""
+
+msgid "Keep 4C Healing"
+msgstr ""
+
+msgid "Lingering Tunes"
+msgstr ""
+
+msgid "Molten Rift"
+msgstr ""
+
+msgid "Moonlit Clouds"
+msgstr ""
+
+msgid "Rejuvenating Glow"
+msgstr ""
+
+msgid "Sierra Gale"
+msgstr ""
+
+msgid "Sun-sinking Eclipse"
+msgstr ""
+
+msgid "Void Thunder"
+msgstr ""
+
+msgid "Check configs to keep, click start in game world, must be in a 16:9 screen ratio"
+msgstr ""
+
+msgid "Prevent Wuthering Waves from moving the mouse"
+msgstr ""
+
+msgid "Turn on if you mouse jumps around"
+msgstr ""
+
+msgid "load chars success [Encore, ShoreKeeper, Xiangliyao]"
+msgstr ""
+
+msgid "Auto Echo Data Merge"
+msgstr ""
+
+msgid "Auto Login"
+msgstr ""
+
+msgid "Auto Login After Game Starts"
+msgstr ""
+
+msgid "Auto Start Game"
+msgstr ""
+
+msgid "Auto Start Game When App Starts"
+msgstr ""
+
+msgid "0"
+msgstr ""
+
+msgid "23"
+msgstr ""
+
+msgid "Auto Target"
+msgstr ""
+
+msgid "Daily Task"
+msgstr ""
+
+msgid "Dragon of Dirge"
+msgstr ""
+
+msgid "Farm World Boss(May need to drop waypoint on Boss)"
+msgstr ""
+
+msgid "Farm selected Tacet Suppression until out of stamina, will use the backup stamina, you need to be able to teleport from the menu(F2)"
+msgstr ""
+
+msgid "Hecate"
+msgstr ""
+
+msgid "Login, claim monthly card, farm echo twice, and claim daily reward"
+msgstr ""
+
+msgid "Lorelei"
+msgstr ""
+
+msgid "Nightmare: Crownless"
+msgstr ""
+
+msgid "Nightmare: Feilian Beringal"
+msgstr ""
+
+msgid "Nightmare: Impermanence Heron"
+msgstr ""
+
+msgid "Nightmare: Inferno Rider"
+msgstr ""
+
+msgid "Nightmare: Mourning Aix"
+msgstr ""
+
+msgid "Nightmare: Tempest Mephis"
+msgstr ""
+
+msgid "Nightmare: Thundering Mephis"
+msgstr ""
+
+msgid "Nightmare: Lampylumen Myriad"
+msgstr ""
+
+msgid "Sentry Construct"
+msgstr ""
+
+msgid "Tacet Suppression (Must explore first to be able to teleport)"
+msgstr ""
+
+msgid "Task completed"
+msgstr ""
+
+msgid "Turn off to enable auto combat only when manually target enemy using middle click"
+msgstr ""
+
+msgid "Which Tacet Suppression to Farm"
+msgstr ""
+
+msgid "back_up_stamina"
+msgstr ""
+
+msgid "current_stamina"
+msgstr ""
+
+msgid "not enough stamina to farm"
+msgstr ""
+
+msgid "the Nth number in the Tacet Suppression list (F2)"
+msgstr ""
+
+msgid "Auto Enhance Echo"
+msgstr ""
+
+msgid "Auto Enhance Enhance Echo after you add EXP Material"
+msgstr ""
+
+msgid "Login, claim monthly card, farm echo, and claim daily reward"
+msgstr ""
+
+msgid "found do_handle_pop_up: Box(name='echo_enhance_btn', x=382, y=1939, width=206, height=105, confidence=98)"
+msgstr ""
+
+msgid "found do_handle_pop_up: Box(name='red_dot', x=221, y=577, width=31, height=32, confidence=100)"
+msgstr ""
+
+msgid "found red dot feature: Box(name='red_dot', x=221, y=577, width=31, height=32, confidence=100)"
+msgstr ""
+
+msgid "16"
+msgstr ""
+
+msgid "17"
+msgstr ""
+
+msgid "18"
+msgstr ""
+
+msgid "19"
+msgstr ""
+
+msgid "Auto Enhance and Tune Echo after you add EXP Material"
+msgstr ""
+
+msgid "Auto Pick Echo After Combat"
+msgstr ""
+
+msgid "Farm Map with Star Path"
+msgstr ""
+
+msgid "Farm world map with a marked path of stars, start in the map screen"
+msgstr ""
+
+msgid "Fleurdelys"
+msgstr ""
+
+msgid "Loaded 19 from 19 Stars"
+msgstr ""
+
+msgid "Stars"
+msgstr ""
+
+msgid "changed direction -150.3112134396332 None -> s"
+msgstr ""
+
+msgid "reached star Box(name='big_map_star', x=600, y=408, width=30, height=28, confidence=93) 19.313207915827967 27"
+msgstr ""
+
+msgid "reached star Box(name='big_map_star', x=640, y=447, width=30, height=28, confidence=96) 24.041630560342615 27"
+msgstr ""
+
+msgid "reached star Box(name='big_map_star', x=694, y=480, width=30, height=28, confidence=97) 18.35755975068582 27"
+msgstr ""
+
+msgid "37"
+msgstr ""
+
+msgid "86"
+msgstr ""
+
+msgid "Click Start after Entering Dungeon or Teleporting to The Boss"
+msgstr ""
+
+msgid "Farm 4C Echo in Dungeon/World"
+msgstr ""
+
+msgid "Farm world map with a marked path of stars (diamond as the starting point), start in the map screen"
+msgstr ""
+
+msgid "Teleport to Tacet Suppression"
+msgstr ""
+
+msgid "current task"
+msgstr ""
+
+msgid "in main"
+msgstr ""
+
+msgid "used all stamina"
+msgstr ""
+
+msgid "wait main"
 msgstr ""

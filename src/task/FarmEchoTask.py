@@ -1,76 +1,134 @@
+import time
+
 from qfluentwidgets import FluentIcon
 
-from ok.logging.Logger import get_logger
+from ok import Logger, TaskDisabledException
 from src.task.BaseCombatTask import BaseCombatTask
+from src.task.WWOneTimeTask import WWOneTimeTask
 
-logger = get_logger(__name__)
+logger = Logger.get_logger(__name__)
 
 
-class FarmEchoTask(BaseCombatTask):
+class FarmEchoTask(WWOneTimeTask, BaseCombatTask):
 
-    def __init__(self):
-        super().__init__()
-        self.description = "Click Start at the Entrance(Dreamless, Jue)"
-        self.name = "Farm Echo in Dungeon"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.description = "Click Start after Entering Dungeon or Teleporting to The Boss"
+        self.name = "Farm 4C Echo in Dungeon/World"
         self.default_config.update({
-            'Level': 1,
-            'Repeat Farm Count': 100,
-            'Entrance Direction': 'Forward'
+            'Repeat Farm Count': 10000,
+            'Combat Wait Time': 0,
+            'Echo Pickup Method': 'Yolo',
         })
-        self.config_description = {
-            'Level': '(1-6) Important, Choose which level to farm, lower levels might not produce a echo',
-            'Entrance Direction': 'Choose Forward for Dreamless, Backward for Jue'
-        }
-        self.config_type["Entrance Direction"] = {'type': "drop_down", 'options': ['Forward', 'Backward']}
-        self.crownless_pos = (0.9, 0.4)
+        self.config_description.update({
+            'Combat Wait Time': 'Wait time before each combat(seconds), set 5 if farming Sentry Construct',
+        })
+        self.find_echo_method = ['Yolo', 'Walk']
+        self.config_type['Echo Pickup Method'] = {'type': "drop_down", 'options': self.find_echo_method}
         self.icon = FluentIcon.ALBUM
+        self.combat_end_condition = self.find_echos
+        self.add_exit_after_config()
+        self._has_treasure = False
+        self._in_realm = False
+        self._farm_start_time = time.time()
+
+    def on_combat_check(self):
+        self.incr_drop(self.pick_f(handle_claim=True))
+        if not self._in_realm and time.time() - self._farm_start_time < 20:
+            self._in_realm = self.in_realm()
+        return True
 
     def run(self):
-        self.set_check_monthly_card()
-        self.handler.post(self.mouse_reset, 0.01)
-        if not self.in_team()[0]:
-            self.log_error('must be in game world and in teams, please check you game resolution is 16:9', notify=True)
-            return
-
-        # loop here
-        count = 0
-
-        while count < self.config.get("Repeat Farm Count", 0):
-            count += 1
-            self.wait_in_team_and_world(time_out=20)
-            self.sleep(1)
-            self.walk_until_f(time_out=10,
-                              direction='w' if self.config.get('Entrance Direction') == 'Forward' else 's',
-                              raise_if_not_found=True)
-            logger.info(f'enter success')
-            challenge = self.wait_feature('gray_button_challenge', raise_if_not_found=True, use_gray_scale=True)
-            logger.info(f'found challenge {challenge}')
-            self.sleep(1)
-            self.choose_level(self.config.get("Level"))
-
-            self.combat_once()
-            logger.info(f'farm echo move {self.config.get("Entrance Direction")} walk_until_f to find echo')
-            if self.config.get('Entrance Direction') == 'Forward':
-                dropped = self.walk_until_f(time_out=4, target_text=self.absorb_echo_text(),
-                                            raise_if_not_found=False, backward_time=1)  # find and pick echo
-                logger.debug(f'farm echo found echo move forward walk_until_f to find echo')
+        WWOneTimeTask.run(self)
+        try:
+            return self.do_run()
+        except TaskDisabledException as e:
+            pass
+        except Exception as e:
+            logger.error('farm 4c error, try handle monthly card', e)
+            if self.handle_claim_button() or self.handle_monthly_card():
+                self.run()
             else:
-                self.sleep(2)
-                dropped = self.run_in_circle_to_find_echo(3)
-            self.incr_drop(dropped)
-            self.sleep(0.5)
-            self.send_key('esc')
-            self.wait_click_feature('gray_confirm_exit_button', relative_x=-1, raise_if_not_found=True,
-                                    use_gray_scale=True, wait_until_before_delay=2)
-            self.wait_in_team_and_world(time_out=120)
-            self.sleep(4)
-            if self.config.get('Entrance Direction') == 'Backward':
-                self.right_click()  # Jue
-                self.sleep(3)
+                raise
 
-    def incr_drop(self, dropped):
-        if dropped:
-            self.info['Echo Count'] = self.info.get('Echo Count', 0) + 1
+    def do_run(self):
+        count = 0
+        self._in_realm = self.in_realm()
+        self._farm_start_time = time.time()
+        threshold = 0.25 if self._in_realm else 0.65
+        time_out = 12 if self._in_realm else 4
+        self._has_treasure = False
+        while count < self.config.get("Repeat Farm Count", 0):
+            if self._in_realm:
+                self.send_key('esc', after_sleep=0.5)
+                self.wait_click_feature('confirm_btn_hcenter_vcenter', relative_x=-1, raise_if_not_found=True,
+                                        post_action=lambda: self.send_key('esc', after_sleep=1),
+                                        settle_time=1)
+                self.wait_in_team_and_world(time_out=120)
+                self.sleep(2)
+            elif not self.in_combat():
+                if self._has_treasure:
+                    self.wait_until(lambda: self.find_treasure_icon() or self.in_combat() or self.find_f_with_text(),
+                                    time_out=5, raise_if_not_found=False)
+                if not self.in_combat():
+                    self.log_info('not in combat try click restart')
+                    if self.walk_to_treasure_and_restart():
+                        self._has_treasure = True
+                        self.log_info('_has_treasure = True')
+                    self.scroll_and_click_buttons()
+
+            count += 1
+            self.log_info('start wait in combat')
+            if not self.wait_until(self.in_combat, raise_if_not_found=False,
+                                   time_out=12) and not self._in_realm and not self._has_treasure:
+                self.teleport_to_nearest_boss()
+                self.run_until(self.in_combat, 'w', time_out=5, running=True)
+
+            self.sleep(self.config.get("Combat Wait Time", 0))
+
+            self.combat_once(wait_combat_time=0, raise_if_not_found=False)
+            if self.pick_echo():
+                logger.info(f'farm echo on the face')
+                dropped = True
+            elif self.config.get('Echo Pickup Method', "Yolo") == "Yolo":
+                dropped = \
+                    self.yolo_find_echo(turn=self._in_realm, use_color=False, time_out=time_out, threshold=threshold)[0]
+                logger.info(f'farm echo yolo find {dropped}')
+            else:
+                dropped = self.walk_find_echo()
+                logger.info(f'farm echo walk_find_echo {dropped}')
+            self.incr_drop(dropped)
+            if dropped and not self._has_treasure:
+                self.wait_until(self.in_combat, raise_if_not_found=False, time_out=5)
+            else:
+                self.sleep(1)
+
+    def teleport_to_nearest_boss(self):
+        self.zoom_map(esc=False)
+        boxes = self.find_feature(['boss_no_check_mark', 'boss_check_mark'], box=self.box_of_screen(0.1, 0.1, 0.9, 0.9),
+                                  threshold=0.6)
+        self.log_info(f'teleport_to_nearest_boss {boxes}')
+        if len(boxes) > 0:
+            center = self.box_of_screen(0.5, 0.5, 0.5, 0.5)
+            nearest_boss = center.find_closest_box('all', boxes)
+            self.click_box(nearest_boss)
+            self.wait_click_travel()
+            self.wait_in_team_and_world(time_out=30)
+
+    def scroll_and_click_buttons(self):
+        self.sleep(0.2)
+        while self.find_f_with_text() and not self.in_combat():
+            self.log_info('scroll_and_click_buttons')
+            self.scroll_relative(0.5, 0.5, 1)
+            self.sleep(0.2)
+            self.send_key('f')
+            if self.handle_claim_button():
+                self._has_treasure = True
+
+    def walk_to_treasure_and_restart(self):
+        if self.find_treasure_icon():
+            self.walk_to_box(self.find_treasure_icon, end_condition=self.find_f_with_text, y_offset=0.1)
+            return True
 
     def choose_level(self, start):
         y = 0.17
@@ -81,12 +139,12 @@ class FarmEchoTask(BaseCombatTask):
         self.click_relative(x, y + (start - 1) * distance)
         self.sleep(0.5)
 
-        self.wait_click_feature('gray_button_challenge', raise_if_not_found=True, use_gray_scale=True,
+        self.wait_click_feature('gray_button_challenge', raise_if_not_found=True,
                                 click_after_delay=0.5)
         self.wait_click_feature('gray_confirm_exit_button', relative_x=-1, raise_if_not_found=False,
-                                use_gray_scale=True, time_out=3, click_after_delay=0.5, threshold=0.8)
+                                time_out=3, click_after_delay=0.5, threshold=0.8)
         self.wait_click_feature('gray_start_battle', relative_x=-1, raise_if_not_found=True,
-                                use_gray_scale=True, click_after_delay=0.5, threshold=0.8)
+                                click_after_delay=0.5, threshold=0.8)
 
 
 echo_color = {
